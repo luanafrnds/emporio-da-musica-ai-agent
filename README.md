@@ -1,12 +1,12 @@
-# 🎸 Empório da Música — Assistente de Atendimento
+# Empório da Música — Customer Support Assistant
 
-Protótipo de agente de atendimento por mensagens de texto para a **Empório da Música** (loja fictícia de instrumentos musicais em Campo Grande/MS), feito para o desafio técnico de AI Engineer da Artefact.
+Prototype of a text-message customer support agent for **Empório da Música**, a fictional musical instrument store in Campo Grande/MS (Brazil), built for the Artefact AI Engineer technical challenge.
 
-O assistente responde dúvidas sobre **catálogo, preços e estoque** (a partir dos CSVs) e sobre **políticas da loja** (a partir do manual em PDF), e recusa com educação o que foge do escopo da loja.
+The assistant answers questions about the **catalog, prices and stock** (from the CSV files) and about **store policies** (from the PDF manual), and politely declines requests outside the store's scope. The customer-facing language is **Brazilian Portuguese**, because the store and its customers are Brazilian; all project documentation is in English.
 
-## Como rodar
+## How to run
 
-Requisitos: Python 3.10+.
+Requirements: Python 3.10+.
 
 ```bash
 git clone https://github.com/luanafrnds/emporio-da-musica-ai-agent.git
@@ -19,110 +19,107 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-O app abre em `http://localhost:8501`. **Não é necessária nenhuma chave de API**: o protótipo não chama nenhum LLM.
+The app opens at `http://localhost:8501`. **No API key is needed**: this prototype does not call any LLM.
 
-### Dados
+### Data
 
-Os arquivos ficam na pasta `data/` (o app também procura na raiz e em `dados/`):
+Files live in the `data/` folder (the app also looks in the repository root and in `dados/`):
 
-| Arquivo | Uso |
+| File | Usage |
 |---|---|
-| `desafio_tecnico_ai_eng - products.csv` | catálogo, preço, estoque e status |
-| `desafio_tecnico_ai_eng - categories.csv` | nomes das categorias |
-| `desafio_tecnico_ai_eng - promotions.csv` | promoções (apenas as ativas são oferecidas) |
-| `desafio_tecnico_ai_eng - orders / order_items / customers.csv` | carregados e exibidos na aba *Dados*; ainda não usados nas respostas |
-| `politicas_da_loja.pdf` | manual de políticas (recuperação de trechos) |
+| `desafio_tecnico_ai_eng - products.csv` | catalog, price, stock and product status |
+| `desafio_tecnico_ai_eng - categories.csv` | category names |
+| `desafio_tecnico_ai_eng - promotions.csv` | promotions (only active ones are offered) |
+| `desafio_tecnico_ai_eng - orders / order_items / customers.csv` | loaded and shown in the *Data* tab; not yet used in answers |
+| `politicas_da_loja.pdf` | policy manual (passage retrieval) |
 
-## Como funciona
+## How it works
 
 ```
-Pergunta ─▶ normalização (minúsculas, sem acento)
-          ─▶ roteador por regras, em ordem de prioridade:
-               1. escopo (acessórios, conserto/usados)     → recusa educada
-               2. casos de devolução/defeito/troca com prazo → aplica as regras do manual
-               3. promoções                                 → lê promotions.csv
-               4. políticas (pagamento, entrega, garantia…) → recuperação no PDF
-               5. preço / ranking / faixa / ordinal         → consulta pandas no catálogo
-               6. contato, endereço, horários               → respostas fixas conferidas no manual
-               7. quantidade / estoque / marca / categoria  → consulta ao catálogo
-               8. fallback                                  → admite que não sabe
+Question -> normalization (lowercase, no accents)
+         -> rule-based router, in priority order:
+              1. scope (accessories, repairs/used items)        -> polite refusal
+              2. return / defect / exchange with elapsed days   -> applies the manual's deadlines
+              3. promotions                                     -> reads promotions.csv
+              4. policies (payment, delivery, warranty...)      -> retrieval over the PDF
+              5. price / ranking / range / ordinal              -> pandas query on the catalog
+              6. contact, address, opening hours                -> fixed answers checked against the manual
+              7. quantity / stock / brand / category            -> catalog query
+              8. fallback                                       -> admits it does not know
 ```
 
-- **Catálogo (dados estruturados):** consultas determinísticas em `pandas`. Preços, estoque e status vêm sempre do CSV, nunca de texto gerado, para não inventar valores.
-- **Políticas (RAG léxico):** o PDF é extraído com PyMuPDF e dividido por seção numerada (`4.1`, `5.2`…). Cada seção recebe uma pontuação por tópico (título pesa mais que o corpo) e, dentro da seção escolhida, só os parágrafos relevantes são devolvidos.
-- **Regras de negócio aplicadas ao caso:** em perguntas como *"recebi há 10 dias e me arrependi, posso devolver?"*, o prazo informado é comparado com as regras do manual (7 dias para arrependimento online, 30 dias para troca por defeito, 7 dias para troca por preferência) e a resposta diz se o cliente está dentro ou fora do prazo.
-- **Contexto de conversa:** a categoria e a ordenação da última consulta ficam em `st.session_state`, permitindo *"Quais os 5 violões mais baratos?" → "E o segundo mais caro?"*.
+- **Catalog (structured data):** deterministic `pandas` queries. Prices, stock and status always come from the CSV, never from generated text, so values are not invented.
+- **Policies (lexical retrieval over the PDF):** the PDF is extracted with PyMuPDF and split by numbered section (`4.1`, `5.2`, ...). Each section is scored per topic (the title weighs more than the body) and, inside the chosen section, only the relevant paragraphs are returned.
+- **Business rules applied to the customer's case:** for questions such as *"I received my guitar 10 days ago and regret the purchase, can I return it?"*, the elapsed time is compared with the manual (7 days for online withdrawal, 30 days for exchange due to defect, 7 days for exchange by preference) and the answer states whether the customer is within the deadline.
+- **Conversation context:** the category and ordering of the last query are kept in `st.session_state`, enabling *"Which are the 5 cheapest acoustic guitars?" -> "And the second most expensive?"*.
 
-## Decisões técnicas e justificativas
+## Technical decisions and rationale
 
-| Decisão | Escolha | Por quê |
+| Decision | Choice | Why |
 |---|---|---|
-| Abordagem | Roteamento por regras (regex e palavras-chave) + consultas determinísticas em Pandas + recuperação léxica no PDF | Respostas sobre preço, estoque e prazo precisam ser exatas e auditáveis; o manual (seção 7.1) diz que o atendente nunca deve informar preços, estoque ou prazos sem consultar o sistema. |
-| Modelo / provedor | **Nenhum LLM utilizado** (nem para entender a pergunta, nem para redigir a resposta) | Escolha deliberada para o protótipo: sem custo de inferência e sem chave de API, mesma pergunta gera a mesma resposta (reprodutível), testes locais imediatos e nenhum texto de valor ou regra é gerado por um modelo, apenas lido do CSV ou do manual. Em contrapartida, o entendimento de linguagem é limitado (ver *Limitações*). |
-| Interface | Streamlit | Entrega rápida de uma UI de chat com abas de catálogo e diagnóstico. |
-| Persistência | Histórico e contexto na sessão (`st.session_state`) | Suficiente para o protótipo; não há dados pessoais armazenados. |
-| Tratamento de dados | Leitura tolerante de CSV (encoding, separador `;`/`,`), preços em formato BR, reconhecimento de nomes de colunas | Os CSVs do desafio usam `;`; o código aceita variações. |
+| Approach | Rule-based routing (regex and keywords) + deterministic Pandas queries + lexical retrieval over the PDF | Answers about price, stock and deadlines must be exact and auditable; the manual (section 7.1) says agents must never state prices, stock or deadlines without checking the system. |
+| Model / provider | **No LLM is used** (neither to understand the question nor to write the answer) | Deliberate choice for this prototype: no inference cost and no API key, the same question always gives the same answer, tests run locally and instantly, and no price or rule is ever generated by a model, only read from the CSV or the manual. The trade-off is limited language understanding (see *Known limitations*). |
+| Interface | Streamlit | Fast delivery of a chat UI with a catalog tab and a diagnostics tab. |
+| History persistence | Chat history and context kept in `st.session_state` | Enough for the prototype; no personal data is stored. |
+| Data handling | Tolerant CSV reader (encoding, `;` or `,` separator), BRL price parsing, flexible column-name matching | The challenge CSVs use `;`; the code accepts common variations. |
 
-### Suposições documentadas
+### Documented assumptions
 
-- Só produtos com `status = active` **e** estoque > 0 são oferecidos. Produtos `discontinued` e `coming_soon` são informados como indisponíveis.
-- A categoria oficial vem de `categories.csv`; a marca é buscada **só no nome** do produto, porque as descrições do CSV às vezes citam outra marca (ex.: *Music Man Bass 1X* descrito como Jazz Bass da Fender).
-- Promoções com `is_active = 0` não são oferecidas ("nunca prometer um desconto que não está mais vigente", manual seção 7.3).
-- O manual **não** trata de retirada na loja: o assistente diz que não encontrou a informação e encaminha para o WhatsApp, em vez de responder com regras de frete.
-- O manual traz dois telefones (capa: (67) 3341-4444; seção 7: (67) 3321-4500). O assistente usa o da capa/dados da empresa.
-- Os prazos de devolução contam a partir do **recebimento**; quando o cliente diz "comprei há X dias", assume-se a mesma contagem.
+- Only products with `status = active` **and** stock > 0 are offered. `discontinued` and `coming_soon` products are reported as unavailable.
+- The official category comes from `categories.csv`; the brand is matched **only in the product name**, because CSV descriptions sometimes mention a different brand (e.g. *Music Man Bass 1X* is described as a Fender Jazz Bass).
+- Promotions with `is_active = 0` are never offered ("never promise a discount that is no longer valid", manual section 7.3).
+- The manual does **not** cover in-store pickup: the assistant says it did not find that information and refers the customer to WhatsApp, instead of answering with shipping rules.
+- The manual lists two phone numbers (cover: (67) 3341-4444; section 7: (67) 3321-4500). The assistant uses the one from the company data.
+- Return deadlines count from the moment of **receipt**; when the customer says "I bought it X days ago", the same count is assumed.
 
-## Limitações conhecidas
+## Known limitations
 
-- **Ausência de LLM:** o assistente opera apenas com regras e palavras-chave predefinidas. Perguntas formuladas de maneira atípica caem no *fallback*, e frases que misturam vários tópicos podem ser respondidas só em parte. Por ser baseado em regras, o roteamento também pode errar: um erro de classificação da pergunta gera uma resposta correta para o assunto errado (já corrigi vários casos assim durante os testes). Não ter LLM elimina respostas inventadas pelo modelo, mas não elimina erros de lógica.
-- **Respostas de política citam o manual:** o assistente devolve o trecho relevante, mas não reescreve em linguagem natural (isso exigiria um LLM).
-- **Status de pedido não implementado:** `orders.csv` está carregado, mas ainda não há consulta por número de pedido ou rastreamento.
-- **Prazos de devolução no código:** os prazos (7 e 30 dias) estão escritos nas regras; se o manual mudar, é preciso atualizar o código.
-- **Datas:** entende "há 10 dias", "ontem" e "uma semana", mas não datas como "dia 20/10".
-- **Persona:** o tom é acolhedor e informal, mas fixo (sem variação gerada).
+- **No LLM:** the assistant works only with predefined rules and keywords. Unusually phrased questions fall back to a generic answer, and messages mixing several topics may be answered only partially. Rule-based routing can also misclassify a question and return a correct answer for the wrong topic (several such cases were fixed during testing). Having no LLM removes model-invented answers, but not logic errors.
+- **Policy answers quote the manual:** the assistant returns the relevant passage but does not rewrite it in natural language (that would require an LLM).
+- **Order status is not implemented:** `orders.csv` is loaded, but there is no lookup by order number or tracking code yet.
+- **Deadlines hard-coded:** the 7-day and 30-day deadlines are written in the rules; if the manual changes, the code must be updated.
+- **Dates:** "10 days ago", "yesterday" and "one week" are understood, but not dates such as "October 20th".
+- **Persona:** the tone is warm and informal but fixed (no generated variation).
 
-## O que eu faria com mais tempo
+## What I would do with more time
 
-1. Usar as funções de catálogo e política como **ferramentas (function calling)** de um LLM, mantendo os dados determinísticos e deixando o modelo responsável por entender a pergunta e redigir a resposta no tom da loja.
-2. Trocar a recuperação léxica por **embeddings** (com fallback para "não encontrei") e avaliar com um conjunto fixo de perguntas.
-3. Implementar **consulta de pedido** (status, rastreamento, previsão de entrega) com verificação do cliente.
-4. Criar uma **suíte de testes automatizados** com as perguntas de exemplo e as respostas esperadas.
-5. Persistir conversas e adicionar logs de perguntas não respondidas para melhorar a cobertura.
+1. Use the catalog and policy functions as **tools (function calling)** of an LLM, keeping the data deterministic and letting the model understand the question and write the answer in the store's tone.
+2. Replace lexical retrieval with **embeddings** (with a "not found" fallback) and evaluate it on a fixed question set.
+3. Implement **order lookup** (status, tracking, delivery estimate) with customer verification.
+4. Build an **automated test suite** with the example questions and expected answers.
+5. Persist conversations and log unanswered questions to improve coverage.
 
-## Uso de assistentes de código
+## Use of code assistants
 
-Usei o **Claude** (Anthropic) como assistente de código e revisão. O fluxo foi:
+I used **Claude** (Anthropic) as a coding and review assistant. The workflow was:
 
-1. Escrevi a primeira versão do app e pedi uma revisão crítica do código.
-2. Apliquei as melhorias sugeridas (categorias, busca por marca, recuperação de políticas, quantidade de unidades e contexto de conversa) com o apoio do Claude.
-3. Testei o assistente com os CSVs e o PDF reais, com perguntas de exemplo, e usei os resultados (ex.: retirada na loja, produto danificado, prazo de devolução) para ajustar as regras.
-4. Revisei cada mudança antes de aceitar e mantive o roteamento o mais simples possível.
+1. I wrote the first version of the app and asked for a critical code review.
+2. I applied the suggested improvements (categories, brand search, policy retrieval, quantity handling and conversation context) with Claude's help.
+3. I tested the assistant against the real CSV files and the PDF with sample questions, and used the results (e.g. in-store pickup, damaged product, return deadline) to adjust the rules.
+4. I reviewed each change before accepting it and kept the routing as simple as possible.
 
+## Example interactions
 
-## Exemplos de interação
+Text conversations are in the [`exemplos/`](exemplos/) folder.
 
-Conversas de exemplo (texto) na pasta [`exemplos/`](exemplos/).
+### Screenshots of the running interface
 
-### Prints da interface funcionando
+**Home screen, with the data sources loaded**
+<img width="2914" height="1652" alt="Home screen" src="https://github.com/user-attachments/assets/0d743c6f-16b8-4b4e-82ef-4304cf115705" />
 
-**Tela inicial, com as fontes de dados carregadas**
-<img width="2914" height="1652" alt="image" src="https://github.com/user-attachments/assets/0d743c6f-16b8-4b4e-82ef-4304cf115705" />
+**Catalog query and an out-of-scope request (accessories)**
+<img width="2916" height="1666" alt="Catalog query and out-of-scope request" src="https://github.com/user-attachments/assets/4508b329-c6c8-4e4e-8c4c-4274731281bb" />
 
+**Warranty policy retrieved from the PDF manual**
+<img width="2940" height="1650" alt="Warranty policy from the manual" src="https://github.com/user-attachments/assets/e3653743-4d29-4be3-bf56-22177e87b88f" />
 
-**Consulta ao catálogo e resposta fora do escopo (acessórios)**
-<img width="2916" height="1666" alt="image" src="https://github.com/user-attachments/assets/4508b329-c6c8-4e4e-8c4c-4274731281bb" />
-
-
-**Política de garantia recuperada do manual em PDF**
-<img width="2940" height="1650" alt="image" src="https://github.com/user-attachments/assets/e3653743-4d29-4be3-bf56-22177e87b88f" />
-
-## Estrutura
+## Project structure
 
 ```
 .
-├── app.py               # interface Streamlit + motor de respostas
+├── app.py               # Streamlit interface + answer engine
 ├── requirements.txt
-├── data/                # CSVs e PDF de políticas
-├── exemplos/            # conversas de exemplo
+├── data/                # CSV files and policy PDF
+├── exemplos/            # example conversations
 └── README.md
 ```
