@@ -57,8 +57,8 @@ Pergunta ─▶ normalização (minúsculas, sem acento)
 
 | Decisão | Escolha | Por quê |
 |---|---|---|
-| Abordagem | Roteamento por regras + consultas determinísticas + recuperação léxica no PDF | Respostas sobre preço, estoque e prazo precisam ser exatas e auditáveis; o manual diz que o atendente nunca deve informar preço/estoque sem consultar o sistema. |
-| Modelo / provedor | Nenhum LLM | Zero custo, sem chave de API, resultado reprodutível e fácil de testar. É uma limitação consciente (ver abaixo). |
+| Abordagem | Roteamento por regras (regex e palavras-chave) + consultas determinísticas em Pandas + recuperação léxica no PDF | Respostas sobre preço, estoque e prazo precisam ser exatas e auditáveis; o manual (seção 7.1) diz que o atendente nunca deve informar preços, estoque ou prazos sem consultar o sistema. |
+| Modelo / provedor | **Nenhum LLM utilizado** (nem para entender a pergunta, nem para redigir a resposta) | Escolha deliberada para o protótipo: sem custo de inferência e sem chave de API, mesma pergunta gera a mesma resposta (reprodutível), testes locais imediatos e nenhum texto de valor ou regra é gerado por um modelo, apenas lido do CSV ou do manual. Em contrapartida, o entendimento de linguagem é limitado (ver *Limitações*). |
 | Interface | Streamlit | Entrega rápida de uma UI de chat com abas de catálogo e diagnóstico. |
 | Persistência | Histórico e contexto na sessão (`st.session_state`) | Suficiente para o protótipo; não há dados pessoais armazenados. |
 | Tratamento de dados | Leitura tolerante de CSV (encoding, separador `;`/`,`), preços em formato BR, reconhecimento de nomes de colunas | Os CSVs do desafio usam `;`; o código aceita variações. |
@@ -74,7 +74,7 @@ Pergunta ─▶ normalização (minúsculas, sem acento)
 
 ## Limitações conhecidas
 
-- **Sem LLM:** o roteador é baseado em palavras-chave e expressões regulares. Perguntas formuladas de forma muito diferente das previstas caem no fallback, e perguntas que misturam vários assuntos podem ser respondidas só em parte.
+- **Ausência de LLM:** o assistente opera apenas com regras e palavras-chave predefinidas. Perguntas formuladas de maneira atípica caem no *fallback*, e frases que misturam vários tópicos podem ser respondidas só em parte. Por ser baseado em regras, o roteamento também pode errar: um erro de classificação da pergunta gera uma resposta correta para o assunto errado (já corrigi vários casos assim durante os testes). Não ter LLM elimina respostas inventadas pelo modelo, mas não elimina erros de lógica.
 - **Respostas de política citam o manual:** o assistente devolve o trecho relevante, mas não reescreve em linguagem natural (isso exigiria um LLM).
 - **Status de pedido não implementado:** `orders.csv` está carregado, mas ainda não há consulta por número de pedido ou rastreamento.
 - **Prazos de devolução no código:** os prazos (7 e 30 dias) estão escritos nas regras; se o manual mudar, é preciso atualizar o código.
