@@ -98,7 +98,6 @@ Usei o **Claude** (Anthropic) como assistente de código e revisão. O fluxo foi
 3. Testei o assistente com os CSVs e o PDF reais, com perguntas de exemplo, e usei os resultados (ex.: retirada na loja, produto danificado, prazo de devolução) para ajustar as regras.
 4. Revisei cada mudança antes de aceitar e mantive o roteamento o mais simples possível.
 
-> Ajuste esta seção para refletir exatamente como você usou as ferramentas (e outras, se houver).
 
 ## Exemplos de interação
 
