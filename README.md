@@ -107,13 +107,15 @@ Conversas de exemplo (texto) na pasta [`exemplos/`](exemplos/).
 ### Prints da interface funcionando
 
 **Tela inicial, com as fontes de dados carregadas**
-![Tela inicial](prints/01-tela-inicial.png)
+<img width="2914" height="1652" alt="image" src="https://github.com/user-attachments/assets/0d743c6f-16b8-4b4e-82ef-4304cf115705" />
+
 
 **Consulta ao catálogo e resposta fora do escopo (acessórios)**
-![Catálogo e escopo](prints/02-catalogo-e-escopo.png)
+<img width="2916" height="1666" alt="image" src="https://github.com/user-attachments/assets/4508b329-c6c8-4e4e-8c4c-4274731281bb" />
+
 
 **Política de garantia recuperada do manual em PDF**
-![Garantia](prints/03-politica-garantia.png)
+<img width="2940" height="1650" alt="image" src="https://github.com/user-attachments/assets/e3653743-4d29-4be3-bf56-22177e87b88f" />
 
 ## Estrutura
 
