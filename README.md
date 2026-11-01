@@ -102,7 +102,18 @@ Usei o **Claude** (Anthropic) como assistente de código e revisão. O fluxo foi
 
 ## Exemplos de interação
 
-As conversas de exemplo estão na pasta [`exemplos/`](exemplos/).
+Conversas de exemplo (texto) na pasta [`exemplos/`](exemplos/).
+
+### Prints da interface funcionando
+
+**Tela inicial, com as fontes de dados carregadas**
+![Tela inicial](prints/01-tela-inicial.png)
+
+**Consulta ao catálogo e resposta fora do escopo (acessórios)**
+![Catálogo e escopo](prints/02-catalogo-e-escopo.png)
+
+**Política de garantia recuperada do manual em PDF**
+![Garantia](prints/03-politica-garantia.png)
 
 ## Estrutura
 
