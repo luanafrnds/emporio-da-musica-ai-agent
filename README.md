@@ -1,4 +1,4 @@
-# Empório da Música — Customer Support Assistant
+# Empório da Música 🎸 — Customer Support Assistant
 
 Prototype of a text-message customer support agent for **Empório da Música**, a fictional musical instrument store in Campo Grande/MS (Brazil), built for the Artefact AI Engineer technical challenge.
 
